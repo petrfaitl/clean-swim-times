@@ -479,7 +479,7 @@ def parse_args():
         "-o", "--output", "--output-file",
         dest="output_file",
         default=None,
-        help="Path to output CSV file (default: '<input_stem>-cleaned.csv')"
+        help="Path to output CSV file (default: <input>-cleaned.csv)"
     )
     parser.add_argument(
         "--in-place",
@@ -489,27 +489,27 @@ def parse_args():
     parser.add_argument(
         "-d", "--dry-run",
         action="store_true",
-        help="Validate and preview time transformations without writing output"
+        help="Validate and preview normalization without writing changes"
     )
     parser.add_argument(
         "-t", "--test",
         action="store_true",
-        help="Run comprehensive unit tests and exit"
+        help="Run normalization unit tests"
     )
     parser.add_argument(
         "-v", "--verbose",
         action="store_true",
-        help="Print detailed transformation information for each swimmer and event"
+        help="Print detailed row-by-row normalization actions"
     )
     parser.add_argument(
         "--backup",
         action="store_true",
-        help="Create a .bak backup file when modifying files in-place"
+        help="Create a .bak backup file when modifying or writing in-place"
     )
     parser.add_argument(
         "--encoding",
         default="utf-8-sig",
-        help="CSV file encoding (default: %(default)s)"
+        help="File encoding for reading/writing CSV (default: utf-8-sig)"
     )
     return parser.parse_args()
 
@@ -518,15 +518,23 @@ def main():
 
     if args.test:
         test_normalization()
-        sys.exit(0)
+        return
+
+    input_path = args.input_file
+    if not os.path.exists(input_path):
+        print(f"Error: Input file '{input_path}' not found.", file=sys.stderr)
+        sys.exit(1)
 
     if args.dry_run:
-        dry_run_csv(args.input_file, encoding=args.encoding, verbose=args.verbose)
-        sys.exit(0)
+        dry_run_csv(input_path, encoding=args.encoding, verbose=args.verbose)
+        return
 
-    output_path = args.input_file if args.in_place else args.output_file
+    output_path = args.output_file
+    if args.in_place:
+        output_path = input_path
+
     clean_csv(
-        input_path=args.input_file,
+        input_path=input_path,
         output_path=output_path,
         encoding=args.encoding,
         backup=args.backup,
